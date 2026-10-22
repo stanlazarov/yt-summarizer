@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# WXT build output and generated files
+.output/
+.wxt/
+stats.html
+stats-*.json
+
+# Packaged extensions and signing keys
+*.zip
+*.crx
+*.pem
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Test & coverage
+coverage/
+
+# Editors & OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Claude Code local settings
+.claude/settings.local.json
