@@ -16,12 +16,16 @@ import {
 import type { Summary } from '@/lib/summarize';
 import { formatTimestamp } from '@/lib/time';
 import { videoIdFromUrl } from '@/lib/transcript';
+import { icon } from './icons';
 
 const content = document.getElementById('content')!;
 const titleEl = document.getElementById('title')!;
+document.getElementById('brand')!.append(icon('logo'));
+document.getElementById('options')!.append(icon('settings'));
 document.getElementById('options')!.addEventListener('click', () => browser.runtime.openOptionsPage());
 
 const sizeButton = document.getElementById('size')!;
+sizeButton.append(icon('resize'));
 let size: PopupSize = POPUP_SIZES[1];
 sizeButton.addEventListener('click', () => {
   // Cycle through presets; Chrome popups can't be drag-resized.
@@ -68,63 +72,91 @@ async function init(): Promise<void> {
 }
 
 function renderLoading(): void {
+  const skeleton = (...widths: string[]) =>
+    el('div', { className: 'card' }, ...widths.map((w) => el('div', { className: `skeleton ${w}` })));
   content.replaceChildren(
-    el('div', { className: 'status' }, el('div', { className: 'spinner' }), el('p', {}, 'Summarizing…')),
+    el(
+      'div',
+      { className: 'loading' },
+      el('div', { className: 'loading-label' }, el('span', { className: 'pulse' }), 'Reading the transcript and summarizing…'),
+      skeleton('', 'mid', 'short'),
+      skeleton('mid', '', 'short', 'mid'),
+    ),
   );
 }
 
 function renderMessage(text: string): void {
-  content.replaceChildren(el('p', { className: 'status' }, text));
+  content.replaceChildren(
+    el('div', { className: 'status' }, el('div', { className: 'badge' }, icon('video')), el('p', {}, text)),
+  );
 }
 
 function renderError(error: UserError, retry: () => void): void {
   const actions = el('div', { className: 'actions' });
   if (error.action === 'options') {
-    actions.append(button('Open Options', () => browser.runtime.openOptionsPage()));
+    actions.append(button('Open Options', () => browser.runtime.openOptionsPage(), '', icon('key')));
   }
-  actions.append(button('Try again', retry, error.action === 'options' ? 'secondary' : ''));
-  content.replaceChildren(el('div', { className: 'status error' }, el('p', {}, error.message), actions));
+  actions.append(button('Try again', retry, error.action === 'options' ? 'secondary' : '', icon('refresh')));
+  content.replaceChildren(
+    el(
+      'div',
+      { className: 'status error' },
+      el('div', { className: 'badge' }, icon('alert')),
+      el('p', {}, error.message),
+      actions,
+    ),
+  );
 }
 
 function renderSummary(title: string, summary: Summary, tabId: number, resummarize: () => void): void {
-  if (title) titleEl.textContent = title;
+  if (title) {
+    titleEl.textContent = title;
+    titleEl.title = title;
+  }
 
   const seek = (seconds: number) =>
     sendToTab(tabId, { type: 'seek', seconds }).catch((err: unknown) => renderError(toUserError(err), resummarize));
 
   content.replaceChildren(
-    el('section', {}, el('h2', {}, 'TL;DR'), el('p', {}, summary.tldr)),
+    el('section', { className: 'card tldr' }, el('h2', {}, icon('spark'), 'TL;DR'), el('p', {}, summary.tldr)),
     el(
       'section',
-      {},
-      el('h2', {}, 'Key points'),
-      el('ul', {}, ...summary.key_points.map((p) => el('li', {}, p))),
+      { className: 'card' },
+      el('h2', {}, icon('list'), 'Key points'),
+      el('ul', { className: 'points' }, ...summary.key_points.map((p) => el('li', {}, p))),
     ),
     summary.sections.length > 0
       ? el(
           'section',
-          {},
-          el('h2', {}, 'Sections'),
+          { className: 'card sections-card' },
+          el('h2', {}, icon('clock'), 'Sections'),
           el(
             'ol',
             { className: 'sections' },
-            ...summary.sections.map((s) =>
-              el(
-                'li',
-                {},
-                button(formatTimestamp(s.start_seconds), () => seek(s.start_seconds), 'timestamp'),
-                el('div', {}, el('strong', {}, s.title), el('p', {}, s.summary)),
-              ),
-            ),
+            ...summary.sections.map((s) => {
+              const row = el(
+                'button',
+                { className: 'section', type: 'button', title: `Jump to ${formatTimestamp(s.start_seconds)}` },
+                el('span', { className: 'time' }, icon('play'), formatTimestamp(s.start_seconds)),
+                el(
+                  'span',
+                  {},
+                  el('span', { className: 'section-title' }, s.title),
+                  el('span', { className: 'section-summary' }, s.summary),
+                ),
+              );
+              row.addEventListener('click', () => seek(s.start_seconds));
+              return el('li', {}, row);
+            }),
           ),
         )
       : '',
-    el('div', { className: 'actions' }, button('Re-summarize', resummarize, 'secondary')),
+    el('div', { className: 'actions' }, button('Re-summarize', resummarize, 'secondary', icon('refresh'))),
   );
 }
 
-function button(label: string, onClick: () => void, className = ''): HTMLButtonElement {
-  const b = el('button', { className, type: 'button' }, label);
+function button(label: string, onClick: () => void, className = '', leading?: Node): HTMLButtonElement {
+  const b = el('button', { className, type: 'button' }, ...(leading ? [leading] : []), label);
   b.addEventListener('click', onClick);
   return b;
 }

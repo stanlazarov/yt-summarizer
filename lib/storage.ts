@@ -29,10 +29,10 @@ export async function setSettings(settings: Partial<Settings>): Promise<void> {
   await browser.storage.local.set(settings);
 }
 
-/** Popup size presets. Chrome caps extension popups at 800×600. */
+/** Popup size presets. Chrome caps extension popups at 800×600, so all use the full height. */
 export const POPUP_SIZES = [
-  { id: 'small', label: 'Small', width: 360, height: 480 },
-  { id: 'medium', label: 'Medium', width: 440, height: 580 },
+  { id: 'small', label: 'Small', width: 360, height: 600 },
+  { id: 'medium', label: 'Medium', width: 440, height: 600 },
   { id: 'large', label: 'Large', width: 600, height: 600 },
   { id: 'wide', label: 'Wide', width: 780, height: 600 },
 ] as const;

@@ -31,7 +31,7 @@ testButton.addEventListener('click', async () => {
   const { apiKey, model } = current();
   if (!apiKey) return showStatus('Enter an API key first.', 'error');
   testButton.disabled = true;
-  showStatus('Testing…', '');
+  showStatus('Testing…', 'pending');
   try {
     await sendToBackground({ type: 'testKey', apiKey, model });
     showStatus('Key works.', 'ok');
@@ -46,7 +46,7 @@ function current(): { apiKey: string; model: ModelId } {
   return { apiKey: apiKeyInput.value.trim(), model: modelSelect.value as ModelId };
 }
 
-function showStatus(text: string, kind: 'ok' | 'error' | ''): void {
+function showStatus(text: string, kind: 'ok' | 'error' | 'pending'): void {
   status.textContent = text;
   status.className = kind;
 }

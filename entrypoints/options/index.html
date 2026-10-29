@@ -9,14 +9,44 @@
     <style>
       body {
         width: auto;
-        max-width: 520px;
         max-height: none;
-        margin: 32px auto;
-        padding: 0 16px;
+        overflow: visible;
+        margin: 0;
+        padding: 48px 16px;
+      }
+      .page {
+        max-width: 540px;
+        margin: 0 auto;
+      }
+      .page-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .page-header .brand {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+      }
+      .page-header h1 {
+        font-size: 18px;
+      }
+      .page-header p {
+        margin: 0;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      form.card {
+        padding: 22px 22px 18px;
+      }
+      .field + .field {
+        margin-top: 20px;
       }
       label {
         display: block;
-        margin: 18px 0 6px;
+        margin-bottom: 7px;
+        font-size: 13px;
         font-weight: 600;
       }
       .row {
@@ -27,53 +57,121 @@
       select {
         flex: 1;
         width: 100%;
+        min-width: 0;
+        height: 38px;
         font: inherit;
-        padding: 7px 9px;
+        padding: 0 12px;
         border: 1px solid var(--border);
-        border-radius: 6px;
+        border-radius: 9px;
         background: var(--bg);
         color: var(--fg);
+        transition:
+          border-color 0.15s var(--ease),
+          box-shadow 0.15s var(--ease);
+      }
+      input {
+        font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        font-size: 13px;
+      }
+      input:hover,
+      select:hover {
+        border-color: color-mix(in srgb, var(--fg) 20%, var(--border));
+      }
+      input:focus,
+      select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--accent-soft);
       }
       .hint {
-        margin-top: 6px;
-        font-size: 12px;
+        margin-top: 7px;
+        font-size: 12.5px;
         color: var(--muted);
       }
+      .hint code {
+        font-size: 11.5px;
+        padding: 1px 5px;
+        border-radius: 5px;
+        background: var(--surface-hover);
+      }
+      a {
+        color: var(--accent);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      form .actions {
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+        align-items: center;
+      }
       #status {
-        margin-top: 14px;
-        min-height: 1.4em;
+        margin-left: auto;
+        font-size: 13px;
+        font-weight: 500;
+        opacity: 0;
+        transform: translateY(2px);
+        transition:
+          opacity 0.2s var(--ease),
+          transform 0.2s var(--ease);
+      }
+      #status.ok,
+      #status.error,
+      #status.pending {
+        opacity: 1;
+        transform: none;
       }
       #status.ok {
-        color: #2e7d32;
+        color: var(--ok);
       }
       #status.error {
         color: var(--error);
       }
+      #status.pending {
+        color: var(--muted);
+      }
     </style>
   </head>
   <body>
-    <h1>YouTube Summarizer</h1>
-    <form id="form">
-      <label for="apiKey">Anthropic API key</label>
-      <div class="row">
-        <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
-        <button id="toggle" type="button" class="secondary">Show</button>
+    <div class="page">
+      <div class="page-header">
+        <div class="brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="6" width="16" height="2.6" rx="1.3"/><rect x="4" y="10.7" width="16" height="2.6" rx="1.3"/><rect x="4" y="15.4" width="10" height="2.6" rx="1.3"/></svg>
+        </div>
+        <div>
+          <h1>YouTube Summarizer</h1>
+          <p>Settings</p>
+        </div>
       </div>
-      <p class="hint">
-        Stored only in this browser (<code>chrome.storage.local</code>) and sent only to api.anthropic.com. Get one at
-        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a>.
-      </p>
 
-      <label for="model">Model</label>
-      <select id="model"></select>
-      <p class="hint">Haiku costs about $0.002 per hour of video. Sonnet costs about $0.05 and handles dense or technical videos better.</p>
+      <form id="form" class="card">
+        <div class="field">
+          <label for="apiKey">Anthropic API key</label>
+          <div class="row">
+            <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
+            <button id="toggle" type="button" class="secondary">Show</button>
+          </div>
+          <p class="hint">
+            Stored only in this browser (<code>chrome.storage.local</code>) and sent only to api.anthropic.com. Get one at
+            <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a>.
+          </p>
+        </div>
 
-      <div class="actions">
-        <button type="submit">Save</button>
-        <button id="test" type="button" class="secondary">Test key</button>
-      </div>
-      <p id="status" role="status"></p>
-    </form>
+        <div class="field">
+          <label for="model">Model</label>
+          <select id="model"></select>
+          <p class="hint">Haiku costs about $0.002 per hour of video. Sonnet costs about $0.05 and handles dense or technical videos better.</p>
+        </div>
+
+        <div class="actions">
+          <button type="submit">Save</button>
+          <button id="test" type="button" class="secondary">Test key</button>
+          <p id="status" role="status"></p>
+        </div>
+      </form>
+    </div>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>
