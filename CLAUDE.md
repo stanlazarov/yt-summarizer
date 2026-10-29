@@ -6,7 +6,7 @@ Guidance for Claude Code when working in this repository.
 
 A Chrome (Manifest V3) extension that summarizes the YouTube video in the current tab. The user brings their own Anthropic API key. The extension calls the Claude API directly, with no backend. The summary shows in the toolbar popup as a TL;DR, key points, and timestamped sections; clicking a timestamp seeks the video.
 
-**Status:** early development. Checklist steps 1–5 are implemented and unit-tested, but not yet verified end to end in Chrome. See [`docs/PLAN.md`](docs/PLAN.md).
+**Status:** feature implementation. Checklist steps 1–5 are implemented, unit-tested, and verified end to end against the Claude API; features are being added on top. See [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Stack
 

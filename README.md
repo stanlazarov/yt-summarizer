@@ -10,7 +10,7 @@ In Options you can choose the summary's language, its length (brief, standard, o
 
 You use your own Anthropic API key, and there's no server in between.
 
-> **Status: early development.** The extension builds and the unit tests pass, but it hasn't been tested end to end against the Claude API yet. See [`docs/PLAN.md`](docs/PLAN.md) for the build checklist.
+> **Status: feature implementation.** The core extension works end to end against the Claude API, and features are being added. See [`docs/PLAN.md`](docs/PLAN.md) for the build checklist.
 
 ## Requirements
 
