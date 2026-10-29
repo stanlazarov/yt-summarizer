@@ -5,12 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>YouTube Summarizer Options</title>
     <meta name="manifest.open_in_tab" content="true" />
-    <link rel="stylesheet" href="../popup/style.css" />
+    <link rel="stylesheet" href="../sidepanel/style.css" />
     <style>
       body {
-        width: auto;
-        max-height: none;
-        overflow: visible;
         margin: 0;
         padding: 48px 16px;
       }
@@ -25,9 +22,9 @@
         margin-bottom: 20px;
       }
       .page-header .brand {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
+        width: 40px;
+        height: 28px;
+        border-radius: 8px;
       }
       .page-header h1 {
         font-size: 18px;
@@ -72,11 +69,11 @@
         flex: 1;
         width: 100%;
         min-width: 0;
-        height: 38px;
+        height: 40px;
         font: inherit;
         padding: 0 12px;
         border: 1px solid var(--border);
-        border-radius: 9px;
+        border-radius: 8px;
         background: var(--bg);
         color: var(--fg);
         transition:
@@ -94,8 +91,8 @@
       input:focus,
       select:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-soft);
+        border-color: var(--link);
+        box-shadow: 0 0 0 1px var(--link);
       }
       .hint {
         margin-top: 7px;
@@ -109,7 +106,7 @@
         background: var(--surface-hover);
       }
       a {
-        color: var(--accent);
+        color: var(--link);
         text-decoration: none;
       }
       a:hover {

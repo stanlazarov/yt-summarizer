@@ -1,22 +1,18 @@
-// Stateless: everything comes from chrome.storage.session, so closing and
-// reopening the popup mid-summary picks up where the background is.
+// Stateless: everything comes from chrome.storage.session, so the panel can be
+// closed and reopened mid-summary. Unlike a popup it stays open, so it follows
+// the window's active tab and YouTube's in-page navigations.
 
 import { browser } from 'wxt/browser';
 import { sendToBackground, sendToTab, toUserError } from '@/lib/messages';
-import {
-  getPopupSize,
-  getSummaryState,
-  POPUP_SIZES,
-  setPopupSize,
-  watchSummaryState,
-  type PopupSize,
-  type SummaryState,
-  type UserError,
-} from '@/lib/storage';
+import { getSummaryState, watchSummaryState, type SummaryState, type UserError } from '@/lib/storage';
 import type { Summary } from '@/lib/summarize';
-import { formatTimestamp } from '@/lib/time';
+import { currentSectionIndex, formatTimestamp } from '@/lib/time';
 import { videoIdFromUrl } from '@/lib/transcript';
 import { icon } from './icons';
+
+const DEFAULT_TITLE = 'YouTube Summarizer';
+/** How often the panel asks the page where playback is, to highlight the current section. */
+const PLAYBACK_POLL_MS = 1000;
 
 const content = document.getElementById('content')!;
 const titleEl = document.getElementById('title')!;
@@ -24,57 +20,82 @@ document.getElementById('brand')!.append(icon('logo'));
 document.getElementById('options')!.append(icon('settings'));
 document.getElementById('options')!.addEventListener('click', () => browser.runtime.openOptionsPage());
 
-const sizeButton = document.getElementById('size')!;
-sizeButton.append(icon('resize'));
-let size: PopupSize = POPUP_SIZES[1];
-sizeButton.addEventListener('click', () => {
-  // Cycle through presets; Chrome popups can't be drag-resized.
-  size = POPUP_SIZES[(POPUP_SIZES.indexOf(size) + 1) % POPUP_SIZES.length]!;
-  applySize(size);
-  void setPopupSize(size.id);
+/** Stops the playback polling started by the summary currently on screen. */
+let stopTracking: (() => void) | undefined;
+
+/** The video the panel is showing. Replaced (and the old watcher dropped) when the active tab changes video. */
+let current: { videoId: string; tabId: number; titled: boolean; unwatch: () => void } | undefined;
+
+browser.tabs.onActivated.addListener(() => void refresh());
+browser.tabs.onUpdated.addListener((tabId, change) => {
+  if (change.url) void refresh();
+  // YouTube updates the tab title after the URL; use it until the summary brings the real one.
+  else if (change.title && current?.tabId === tabId && !current.titled) setTitle(stripSuffix(change.title));
 });
-void getPopupSize().then((s) => {
-  size = s;
-  applySize(s);
-});
+void refresh();
 
-function applySize(s: PopupSize): void {
-  document.documentElement.style.setProperty('--popup-width', `${s.width}px`);
-  document.documentElement.style.setProperty('--popup-height', `${s.height}px`);
-  sizeButton.title = `Popup size: ${s.label} (click to change)`;
-}
-
-void init();
-
-async function init(): Promise<void> {
+async function refresh(): Promise<void> {
+  // currentWindow is the window this panel belongs to.
   const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
   const videoId = videoIdFromUrl(tab?.url);
+  if (current && current.videoId === videoId && current.tabId === tab?.id) return;
+
+  current?.unwatch();
+  current = undefined;
   if (!tab?.id || !videoId) {
-    renderMessage('Open a YouTube video, then click the extension icon to summarize it.');
+    setTitle(DEFAULT_TITLE);
+    renderMessage('Open a YouTube video to summarize it here.');
     return;
   }
+
   const tabId = tab.id;
+  const self = { videoId, tabId, titled: false, unwatch: () => {} };
+  current = self;
+  setTitle(tab.title ? stripSuffix(tab.title) : DEFAULT_TITLE);
 
   const start = (force = false) =>
-    sendToBackground({ type: 'getSummary', videoId, tabId, force }).catch((err: unknown) =>
-      renderError(toUserError(err), () => start(true)),
-    );
+    sendToBackground({ type: 'getSummary', videoId, tabId, force }).catch((err: unknown) => {
+      if (current === self) renderError(toUserError(err), () => start(true));
+    });
 
   const render = (state: SummaryState | undefined) => {
+    if (current !== self) return;
     if (!state || state.status === 'loading') renderLoading();
     else if (state.status === 'error') renderError(state.error, () => start(true));
-    else renderSummary(state.title, state.summary, tabId, () => start(true));
+    else {
+      if (state.title) {
+        self.titled = true;
+        setTitle(state.title);
+      }
+      renderSummary(state.summary, videoId, tabId, () => start(true));
+    }
   };
 
-  watchSummaryState(videoId, render);
+  self.unwatch = watchSummaryState(videoId, render);
   render(await getSummaryState(videoId));
-  await start();
+  if (current === self) await start();
+}
+
+function setTitle(title: string): void {
+  titleEl.textContent = title;
+  titleEl.title = title;
+}
+
+function stripSuffix(tabTitle: string): string {
+  return tabTitle.replace(/^\(\d+\)\s*/, '').replace(/ - YouTube$/, '');
+}
+
+/** Replaces the panel content, and stops highlighting for whatever summary was there. */
+function show(...children: (Node | string)[]): void {
+  stopTracking?.();
+  stopTracking = undefined;
+  content.replaceChildren(...children);
 }
 
 function renderLoading(): void {
   const skeleton = (...widths: string[]) =>
     el('div', { className: 'card' }, ...widths.map((w) => el('div', { className: `skeleton ${w}` })));
-  content.replaceChildren(
+  show(
     el(
       'div',
       { className: 'loading' },
@@ -86,7 +107,7 @@ function renderLoading(): void {
 }
 
 function renderMessage(text: string): void {
-  content.replaceChildren(
+  show(
     el('div', { className: 'status' }, el('div', { className: 'badge' }, icon('video')), el('p', {}, text)),
   );
 }
@@ -97,7 +118,7 @@ function renderError(error: UserError, retry: () => void): void {
     actions.append(button('Open Options', () => browser.runtime.openOptionsPage(), '', icon('key')));
   }
   actions.append(button('Try again', retry, error.action === 'options' ? 'secondary' : '', icon('refresh')));
-  content.replaceChildren(
+  show(
     el(
       'div',
       { className: 'status error' },
@@ -108,16 +129,28 @@ function renderError(error: UserError, retry: () => void): void {
   );
 }
 
-function renderSummary(title: string, summary: Summary, tabId: number, resummarize: () => void): void {
-  if (title) {
-    titleEl.textContent = title;
-    titleEl.title = title;
-  }
+function renderSummary(summary: Summary, videoId: string, tabId: number, resummarize: () => void): void {
+  const rows: HTMLButtonElement[] = [];
+  let currentRow = -1;
+  const highlight = (index: number) => {
+    if (index === currentRow) return;
+    rows[currentRow]?.classList.remove('current');
+    rows[currentRow]?.removeAttribute('aria-current');
+    rows[index]?.classList.add('current');
+    rows[index]?.setAttribute('aria-current', 'true');
+    currentRow = index;
+  };
+  const track = async () => {
+    if (document.hidden) return;
+    // Fails while the tab reloads; the next tick tries again.
+    const playback = await sendToTab(tabId, { type: 'getPlayback', videoId }).catch(() => null);
+    if (playback) highlight(currentSectionIndex(summary.sections, playback.seconds));
+  };
 
   const seek = (seconds: number) =>
-    sendToTab(tabId, { type: 'seek', seconds }).catch((err: unknown) => renderError(toUserError(err), resummarize));
+    sendToTab(tabId, { type: 'seek', seconds }).then(track, (err: unknown) => renderError(toUserError(err), resummarize));
 
-  content.replaceChildren(
+  show(
     el('section', { className: 'card tldr' }, el('h2', {}, icon('spark'), 'TL;DR'), el('p', {}, summary.tldr)),
     el(
       'section',
@@ -146,6 +179,7 @@ function renderSummary(title: string, summary: Summary, tabId: number, resummari
                 ),
               );
               row.addEventListener('click', () => seek(s.start_seconds));
+              rows.push(row);
               return el('li', {}, row);
             }),
           ),
@@ -153,6 +187,11 @@ function renderSummary(title: string, summary: Summary, tabId: number, resummari
       : '',
     el('div', { className: 'actions' }, button('Re-summarize', resummarize, 'secondary', icon('refresh'))),
   );
+
+  if (rows.length === 0) return;
+  void track();
+  const timer = setInterval(() => void track(), PLAYBACK_POLL_MS);
+  stopTracking = () => clearInterval(timer);
 }
 
 function button(label: string, onClick: () => void, className = '', leading?: Node): HTMLButtonElement {

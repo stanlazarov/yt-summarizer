@@ -4,16 +4,19 @@ import { getSettings, getSummaryState, samePrefs, setSummaryState } from '@/lib/
 import { summarize, testApiKey } from '@/lib/summarize';
 
 export default defineBackground(() => {
+  // The toolbar icon opens the side panel instead of a popup.
+  void browser.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
   // Summaries running in this worker instance. If the worker was restarted
   // mid-summary, storage still says "loading" but nothing is running; the next
-  // getSummary from the popup notices and starts over.
+  // getSummary from the side panel notices and starts over.
   const running = new Set<string>();
 
   onMessages({
     getSummary: async ({ videoId, tabId, force }) => {
       if (running.has(videoId)) return;
       const state = await getSummaryState(videoId);
-      // Errors are retried on the next popup open, so fixing the cause (adding
+      // Errors are retried the next time the panel shows the video, so fixing the cause (adding
       // a key, reloading the tab) is enough.
       // A summary made with other prefs (or before prefs existed) is stale.
       if (!force && state?.status === 'done' && state.prefs && samePrefs(state.prefs, await getSettings())) return;

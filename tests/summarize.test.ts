@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_PREFS } from '../lib/storage';
 import { buildSystemPrompt, mapApiError, postProcess } from '../lib/summarize';
-import { formatTimestamp, parseTimestamp } from '../lib/time';
+import { currentSectionIndex, formatTimestamp, parseTimestamp } from '../lib/time';
 
 describe('postProcess', () => {
   const summary = {
@@ -89,4 +89,16 @@ describe('time', () => {
     ['abc', null],
     ['', null],
   ])('parses %s', (text, s) => expect(parseTimestamp(text)).toBe(s));
+
+  const sections = [{ start_seconds: 10 }, { start_seconds: 95 }, { start_seconds: 412 }];
+  it.each([
+    [0, -1],
+    [9.9, -1],
+    [10, 0],
+    [94.5, 0],
+    [95, 1],
+    [5000, 2],
+  ])('at %d s the current section is %d', (s, index) => expect(currentSectionIndex(sections, s)).toBe(index));
+
+  it('has no current section when there are none', () => expect(currentSectionIndex([], 30)).toBe(-1));
 });

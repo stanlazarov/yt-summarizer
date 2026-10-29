@@ -1,19 +1,22 @@
 :root {
-  --bg: #f7f7f8;
-  --surface: #ffffff;
-  --surface-hover: #f2f2f4;
-  --fg: #18181b;
-  --muted: #6b6b76;
-  --subtle: #a1a1aa;
-  --border: #e6e6ea;
-  --accent: #e5383b;
-  --accent-hover: #cf2c2f;
-  --accent-soft: rgba(229, 56, 59, 0.06);
+  /* YouTube's own palette, so the panel reads as part of the page next to it. */
+  --bg: #ffffff;
+  --surface: #f2f2f2;
+  --surface-hover: #e5e5e5;
+  --fg: #0f0f0f;
+  --muted: #606060;
+  --subtle: #909090;
+  --border: rgba(0, 0, 0, 0.1);
+  --accent: #ff0033;
+  --accent-hover: #d9002b;
+  --accent-soft: rgba(255, 0, 51, 0.06);
   --accent-fg: #ffffff;
-  --error: #c9252d;
-  --ok: #1f8a4c;
-  --shadow: 0 1px 2px rgba(16, 16, 24, 0.04), 0 1px 1px rgba(16, 16, 24, 0.03);
-  --shadow-lift: 0 4px 14px rgba(16, 16, 24, 0.08), 0 1px 3px rgba(16, 16, 24, 0.06);
+  --link: #065fd4;
+  --link-fg: #ffffff;
+  --error: #cc0000;
+  --ok: #2ba640;
+  --shadow: none;
+  --shadow-lift: none;
   --radius: 12px;
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   color-scheme: light dark;
@@ -21,21 +24,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121214;
-    --surface: #1c1c20;
-    --surface-hover: #25252a;
-    --fg: #ececf0;
-    --muted: #9d9da8;
-    --subtle: #6b6b76;
-    --border: #2c2c32;
-    --accent: #ff5c5f;
-    --accent-hover: #ff7477;
-    --accent-soft: rgba(255, 92, 95, 0.12);
-    --accent-fg: #18080a;
-    --error: #ff7b80;
-    --ok: #4ad187;
-    --shadow: none;
-    --shadow-lift: 0 6px 18px rgba(0, 0, 0, 0.35);
+    --bg: #0f0f0f;
+    --surface: #272727;
+    --surface-hover: #3f3f3f;
+    --fg: #f1f1f1;
+    --muted: #aaaaaa;
+    --subtle: #717171;
+    --border: rgba(255, 255, 255, 0.1);
+    --accent: #ff0033;
+    --accent-hover: #ff3358;
+    --accent-soft: rgba(255, 0, 51, 0.1);
+    --accent-fg: #ffffff;
+    --link: #3ea6ff;
+    --link-fg: #0f0f0f;
+    --error: #ff4e45;
+    --ok: #2ba640;
   }
 }
 
@@ -44,17 +47,14 @@
 }
 
 body {
-  /* Set from the saved size preset in main.ts. */
-  width: var(--popup-width, 440px);
-  max-height: var(--popup-height, 600px);
-  overflow-y: auto;
+  min-height: 100vh;
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font: 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font: 14px/20px Roboto, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  scrollbar-color: var(--surface-hover) transparent;
 }
 
 svg {
@@ -71,18 +71,17 @@ header {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 10px 10px 14px;
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(10px);
+  padding: 12px 8px 12px 16px;
+  background: var(--bg);
   border-bottom: 1px solid var(--border);
 }
 
 .brand {
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 30px;
+  height: 21px;
+  border-radius: 6px;
   background: var(--accent);
   color: #fff;
   flex: none;
@@ -95,18 +94,16 @@ header {
 
 .eyebrow {
   margin: 0;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--subtle);
+  font-size: 12px;
+  line-height: 18px;
+  color: var(--muted);
 }
 
 h1 {
   margin: 0;
-  font-size: 13.5px;
-  font-weight: 600;
-  line-height: 1.3;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 22px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -115,16 +112,16 @@ h1 {
 main {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
+  padding: 12px 16px 24px;
 }
 
 /* Cards */
 
 .card {
-  padding: 14px 16px;
+  padding: 12px 14px;
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 0;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   animation: rise 0.35s var(--ease) both;
@@ -140,22 +137,24 @@ main {
 
 .card.tldr {
   background: linear-gradient(var(--accent-soft), var(--accent-soft)), var(--surface);
-  border-color: color-mix(in srgb, var(--accent) 22%, var(--border));
 }
 
 h2 {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0 0 8px;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  color: var(--fg);
+}
+
+h2 svg {
   color: var(--muted);
 }
 
-.tldr h2 {
+.tldr h2 svg {
   color: var(--accent);
 }
 
@@ -185,16 +184,16 @@ p {
   position: absolute;
   left: 3px;
   top: 0.62em;
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--muted);
 }
 
 /* Sections timeline */
 
 .card.sections-card {
-  padding: 14px 8px 8px;
+  padding: 12px 6px 6px;
 }
 
 .card.sections-card h2 {
@@ -217,7 +216,7 @@ p {
   bottom: 16px;
   width: 2px;
   border-radius: 1px;
-  background: var(--border);
+  background: var(--surface-hover);
 }
 
 .section {
@@ -227,13 +226,14 @@ p {
   justify-content: flex-start;
   gap: 12px;
   width: 100%;
+  height: auto;
   padding: 8px;
   font-weight: 400;
   text-align: left;
   color: inherit;
   background: transparent;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   cursor: pointer;
   transition: background 0.15s var(--ease);
 }
@@ -255,9 +255,9 @@ p {
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--accent);
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  color: var(--link);
+  background: color-mix(in srgb, var(--link) 12%, var(--surface));
+  border: 0;
   border-radius: 999px;
   transition:
     background 0.15s var(--ease),
@@ -270,25 +270,39 @@ p {
 }
 
 .section:hover .time {
-  color: var(--accent-fg);
-  background: var(--accent);
-  border-color: var(--accent);
+  color: var(--link-fg);
+  background: var(--link);
 }
 
 .section:hover .time svg {
   display: block;
 }
 
+/* The section playing now: red like YouTube's progress bar, so it reads apart from the blue hover. */
+.section.current {
+  background: var(--surface-hover);
+}
+
+.section.current .time,
+.section.current:hover .time {
+  color: var(--accent-fg);
+  background: var(--accent);
+}
+
+.section.current .time svg {
+  display: block;
+}
+
 .section-title {
   display: block;
-  font-weight: 600;
-  line-height: 1.35;
+  font-weight: 500;
 }
 
 .section-summary {
   display: block;
   margin-top: 2px;
   font-size: 13px;
+  line-height: 18px;
   color: var(--muted);
 }
 
@@ -299,14 +313,15 @@ button {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  height: 36px;
   font: inherit;
-  font-weight: 550;
+  font-weight: 500;
   cursor: pointer;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  padding: 7px 14px;
-  background: var(--accent);
-  color: var(--accent-fg);
+  border: 0;
+  border-radius: 18px;
+  padding: 0 16px;
+  background: var(--fg);
+  color: var(--bg);
   transition:
     background 0.15s var(--ease),
     border-color 0.15s var(--ease),
@@ -316,8 +331,7 @@ button {
 }
 
 button:hover {
-  background: var(--accent-hover);
-  box-shadow: var(--shadow-lift);
+  background: color-mix(in srgb, var(--fg) 85%, var(--bg));
 }
 
 button:active {
@@ -334,21 +348,19 @@ button:disabled {
 button.secondary {
   background: var(--surface);
   color: var(--fg);
-  border-color: var(--border);
 }
 
 button.secondary:hover {
   background: var(--surface-hover);
-  border-color: color-mix(in srgb, var(--fg) 18%, var(--border));
 }
 
 button.icon {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   background: transparent;
-  color: var(--muted);
-  border-radius: 8px;
+  color: var(--fg);
+  border-radius: 50%;
 }
 
 button.icon:hover {
@@ -368,7 +380,7 @@ button.section:active {
 }
 
 button:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--link);
   outline-offset: 2px;
 }
 
@@ -389,7 +401,6 @@ button:focus-visible {
   text-align: center;
   color: var(--muted);
   background: var(--surface);
-  border: 1px solid var(--border);
   border-radius: var(--radius);
   animation: rise 0.3s var(--ease) both;
 }
@@ -401,7 +412,7 @@ button:focus-visible {
   height: 40px;
   border-radius: 50%;
   background: var(--surface-hover);
-  color: var(--muted);
+  color: var(--fg);
 }
 
 .status.error .badge {
@@ -444,7 +455,7 @@ button:focus-visible {
 .skeleton {
   height: 10px;
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--surface-hover) 25%, var(--border) 45%, var(--surface-hover) 65%);
+  background: linear-gradient(90deg, var(--surface-hover) 25%, color-mix(in srgb, var(--fg) 14%, var(--surface)) 45%, var(--surface-hover) 65%);
   background-size: 300% 100%;
   animation: shimmer 1.4s linear infinite;
 }

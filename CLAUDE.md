@@ -4,7 +4,7 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-A Chrome (Manifest V3) extension that summarizes the YouTube video in the current tab. The user brings their own Anthropic API key. The extension calls the Claude API directly, with no backend. The summary shows in the toolbar popup as a TL;DR, key points, and timestamped sections; clicking a timestamp seeks the video.
+A Chrome (Manifest V3) extension that summarizes the YouTube video in the current tab. The user brings their own Anthropic API key. The extension calls the Claude API directly, with no backend. The summary shows in Chrome's side panel (opened from the toolbar icon) as a TL;DR, key points, and timestamped sections; clicking a timestamp seeks the video.
 
 **Status:** feature implementation. Checklist steps 1–5 are implemented, unit-tested, and verified end to end against the Claude API; features are being added on top. See [`docs/PLAN.md`](docs/PLAN.md).
 
@@ -12,7 +12,7 @@ A Chrome (Manifest V3) extension that summarizes the YouTube video in the curren
 
 - [WXT](https://wxt.dev) (Vite-based extension framework) + TypeScript (strict)
 - `@anthropic-ai/sdk` + `zod` for the Claude call and structured output
-- Vanilla TS + CSS for the popup and options UI (no framework)
+- Vanilla TS + CSS for the side panel and options UI (no framework)
 - Vitest for unit tests (happy-dom for the transcript-panel parser)
 
 ## Commands
@@ -28,21 +28,21 @@ npm run compile    # type-check
 ## Architecture
 
 ```
-popup ──(getSummary videoId)──▶ background service worker ──▶ Claude API
-  │                                   │
-  │                                   └─(getTranscript)──▶ content script (youtube.com)
-  └─(seek seconds)──▶ content script ──▶ <video>.currentTime
+side panel ──(getSummary videoId)──▶ background service worker ──▶ Claude API
+  │                                        │
+  │                                        └─(getTranscript)──▶ content script (youtube.com)
+  └─(seek / getPlayback)──▶ content script ──▶ <video>.currentTime
 ```
 
-- **Popup** (`entrypoints/popup/`): stateless. Every time it opens, it reads state from `chrome.storage.session` and asks the background to start a summary if none exists.
-- **Background** (`entrypoints/background.ts`): orchestrates transcript → summarize → `chrome.storage.session` (keyed by videoId). A summary keeps running after the popup closes.
+- **Side panel** (`entrypoints/sidepanel/`): stateless. It follows the window's active tab and in-page YouTube navigations; for each video it reads state from `chrome.storage.session` and asks the background to start a summary if none exists. While a summary is shown it polls `getPlayback` once a second (skipped while hidden) to highlight the section that's playing. Styled with YouTube's own palette (light/dark) so it sits naturally next to the page; `options/` reuses its stylesheet.
+- **Background** (`entrypoints/background.ts`): orchestrates transcript → summarize → `chrome.storage.session` (keyed by videoId). A summary keeps running after the panel closes. On startup it sets the toolbar icon to open the side panel.
 - **Content script** (`entrypoints/youtube.content.ts`): extracts the transcript and handles seek requests.
 - **Options** (`entrypoints/options/`): API key and model selection.
 
 ## Layout
 
 ```
-entrypoints/   background.ts, youtube.content.ts, popup/, options/
+entrypoints/   background.ts, youtube.content.ts, sidepanel/, options/
 lib/           transcript.ts, summarize.ts, messages.ts, storage.ts, time.ts
 tests/         vitest tests + fixtures (saved watch-page HTML, transcript-panel HTML, json3 captions)
 scripts/       make-icons.mjs (generates public/icon/*.png)

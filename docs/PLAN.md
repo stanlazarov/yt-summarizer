@@ -14,7 +14,7 @@ A simple Chrome extension: open a YouTube video, click the toolbar icon, and get
 |---|---|---|
 | Browser | Chrome/Chromium, Manifest V3 | Largest user base; also covers Edge, Brave, Arc |
 | LLM access | Bring your own Anthropic API key | No server to host; the user controls cost |
-| UI | Toolbar popup | Simplest surface; nothing is injected into YouTube's page |
+| UI | Side panel (was a toolbar popup) | Stays open next to the video while you seek; nothing is injected into YouTube's page |
 | Model | `claude-haiku-5-5` (default), `claude-sonnet-5-5` (option) | Summarization is a routine task. Haiku is cheap and fast. |
 | Tooling | WXT + TypeScript, vanilla UI | Manifest generation, hot reload, bundling for SDK + Zod |
 
@@ -29,18 +29,18 @@ A simple Chrome extension: open a YouTube video, click the toolbar icon, and get
 ## Architecture
 
 ```
-popup ──(getSummary videoId)──▶ background service worker ──▶ Claude API
-  │                                   │
-  │                                   └─(getTranscript)──▶ content script (youtube.com)
-  └─(seek seconds)──▶ content script ──▶ <video>.currentTime
+side panel ──(getSummary videoId)──▶ background service worker ──▶ Claude API
+  │                                        │
+  │                                        └─(getTranscript)──▶ content script (youtube.com)
+  └─(seek / getPlayback)──▶ content script ──▶ <video>.currentTime
 ```
 
-- **Popup**
-  1. Reads the active tab's URL and extracts the video ID.
+- **Side panel** (the toolbar icon opens it via `sidePanel.setPanelBehavior`)
+  1. Reads the active tab's URL and extracts the video ID. Repeats on `tabs.onActivated` and on `tabs.onUpdated` URL changes, so it follows tab switches and YouTube's in-page navigation.
   2. Reads `chrome.storage.session[videoId]`. If it's empty, asks the background to start a summary.
   3. Renders one of the states `loading | done | error`, updating through `chrome.storage.onChanged`.
 
-  The popup holds no state of its own because Chrome closes it as soon as it loses focus.
+  The panel holds no state of its own, so closing and reopening it mid-summary is safe.
 - **Background service worker**
   1. Receives `getSummary`.
   2. Asks the tab's content script for the transcript.
@@ -48,12 +48,12 @@ popup ──(getSummary videoId)──▶ background service worker ──▶ Cl
   4. Writes `{status, summary | error, updatedAt}` to `chrome.storage.session`.
 
   A pending `fetch` keeps the MV3 worker alive for the duration of the call.
-- **Content script** (`*://www.youtube.com/*`) answers `getTranscript` and `seek`.
+- **Content script** (`*://www.youtube.com/*`) answers `getTranscript`, `seek`, and `getPlayback` (the current position, or `null` during an ad or on another video). The side panel polls `getPlayback` once a second to highlight the current section.
 - **Options page** stores the API key (`chrome.storage.local`) and the selected model.
 
 ### Manifest
 
-- `permissions`: `storage`, `activeTab`
+- `permissions`: `storage`, `activeTab`, `sidePanel` (WXT adds `sidePanel` from the entrypoint)
 - `host_permissions`: `*://www.youtube.com/*`, `https://api.anthropic.com/*`
 
 ## Transcript extraction
@@ -96,7 +96,7 @@ const Summary = z.object({
 - Summarize only what the transcript says, without adding outside facts.
 - Section start times must be taken from the transcript's timestamps.
 - Write in the transcript's language, or in the language chosen in Options.
-- Length (brief / standard / detailed; standard is the default) sets how long the TL;DR is and how many key points and sections there are. Style (notes / bullets / ELI5) sets the tone. The output schema is the same for all of them, so the popup doesn't change. `buildSystemPrompt(prefs)` in `lib/summarize.ts` is pure and unit-tested.
+- Length (brief / standard / detailed; standard is the default) sets how long the TL;DR is and how many key points and sections there are. Style (notes / bullets / ELI5) sets the tone. The output schema is the same for all of them, so the side panel doesn't change. `buildSystemPrompt(prefs)` in `lib/summarize.ts` is pure and unit-tested.
 - A cached summary stores the prefs it was made with. If the prefs no longer match, the background makes a new one.
 
 ### Post-processing
@@ -132,7 +132,7 @@ tsconfig.json
 entrypoints/
   background.ts          # message router + orchestration
   youtube.content.ts     # getTranscript + seek
-  popup/index.html, main.ts, style.css
+  sidepanel/index.html, main.ts, style.css
   options/index.html, main.ts
 lib/
   transcript.ts          # watch-page parsing, track selection, json3 parsing, DOM fallback
@@ -163,8 +163,10 @@ tests/
   - No captions → the "no transcript" error
   - A video over 1 hour → completes, and timestamps stay within the video's length
   - Navigating between videos without a reload → the summary matches the current video
-  - Closing the popup mid-summary and reopening it → shows the in-progress state, then the result
+  - Closing the side panel mid-summary and reopening it → shows the in-progress state, then the result
   - Clicking a timestamp → the video seeks to it
+  - Playing the video → the current section is highlighted and follows playback; during an ad it holds
+  - With the panel open, switching tabs or clicking to another video → the panel switches to that video
   - An invalid key → the "check Options" hint
 - `npm run build` → "Load unpacked" from `.output/chrome-mv3` works in a fresh Chrome profile.
 

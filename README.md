@@ -49,9 +49,10 @@ npm run build
 ## Usage
 
 1. Open any YouTube video that has captions (manual or auto-generated).
-2. Click the extension icon.
-3. Wait a few seconds for the summary. You can close the popup in the meantime, and the summary keeps generating.
-4. Click a section's timestamp to seek the video to that point.
+2. Click the extension icon. The summary opens in Chrome's side panel, next to the video.
+3. Wait a few seconds for the summary. You can close the panel in the meantime, and the summary keeps generating.
+   While the panel is open, it follows you: switching tabs or clicking to another video shows (and, if needed, starts) that video's summary.
+4. Click a section's timestamp to seek the video to that point. The section that's playing is highlighted in red.
 
 ## Cost
 
