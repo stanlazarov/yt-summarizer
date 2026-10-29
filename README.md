@@ -10,6 +10,8 @@ In Options you can choose the summary's language, its length (brief, standard, o
 
 You use your own Anthropic API key, and there's no server in between.
 
+![The summary in Chrome's side panel next to a YouTube video, with the section that's playing highlighted, and the Options page on the right](docs/screenshot.webp)
+
 > **Status: feature implementation.** The core extension works end to end against the Claude API, and features are being added. See [`docs/PLAN.md`](docs/PLAN.md) for the build checklist.
 
 ## Requirements
