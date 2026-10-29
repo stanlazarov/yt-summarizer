@@ -29,6 +29,26 @@ export async function setSettings(settings: Partial<Settings>): Promise<void> {
   await browser.storage.local.set(settings);
 }
 
+/** Popup size presets. Chrome caps extension popups at 800×600. */
+export const POPUP_SIZES = [
+  { id: 'small', label: 'Small', width: 360, height: 480 },
+  { id: 'medium', label: 'Medium', width: 440, height: 580 },
+  { id: 'large', label: 'Large', width: 600, height: 600 },
+  { id: 'wide', label: 'Wide', width: 780, height: 600 },
+] as const;
+
+export type PopupSize = (typeof POPUP_SIZES)[number];
+export type PopupSizeId = PopupSize['id'];
+
+export async function getPopupSize(): Promise<PopupSize> {
+  const { popupSize } = await browser.storage.local.get('popupSize');
+  return POPUP_SIZES.find((s) => s.id === popupSize) ?? POPUP_SIZES[1];
+}
+
+export async function setPopupSize(id: PopupSizeId): Promise<void> {
+  await browser.storage.local.set({ popupSize: id });
+}
+
 /** An error the user can act on. `action: "options"` means show a link to Options. */
 export interface UserError {
   message: string;

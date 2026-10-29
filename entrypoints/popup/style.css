@@ -28,8 +28,10 @@
 }
 
 body {
-  width: 420px;
-  max-height: 580px;
+  /* Set from the saved size preset in main.ts. */
+  width: var(--popup-width, 440px);
+  max-height: var(--popup-height, 580px);
+  overflow-y: auto;
   margin: 0;
   background: var(--bg);
   color: var(--fg);

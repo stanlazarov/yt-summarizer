@@ -3,7 +3,16 @@
 
 import { browser } from 'wxt/browser';
 import { sendToBackground, sendToTab, toUserError } from '@/lib/messages';
-import { getSummaryState, watchSummaryState, type SummaryState, type UserError } from '@/lib/storage';
+import {
+  getPopupSize,
+  getSummaryState,
+  POPUP_SIZES,
+  setPopupSize,
+  watchSummaryState,
+  type PopupSize,
+  type SummaryState,
+  type UserError,
+} from '@/lib/storage';
 import type { Summary } from '@/lib/summarize';
 import { formatTimestamp } from '@/lib/time';
 import { videoIdFromUrl } from '@/lib/transcript';
@@ -11,6 +20,25 @@ import { videoIdFromUrl } from '@/lib/transcript';
 const content = document.getElementById('content')!;
 const titleEl = document.getElementById('title')!;
 document.getElementById('options')!.addEventListener('click', () => browser.runtime.openOptionsPage());
+
+const sizeButton = document.getElementById('size')!;
+let size: PopupSize = POPUP_SIZES[1];
+sizeButton.addEventListener('click', () => {
+  // Cycle through presets; Chrome popups can't be drag-resized.
+  size = POPUP_SIZES[(POPUP_SIZES.indexOf(size) + 1) % POPUP_SIZES.length]!;
+  applySize(size);
+  void setPopupSize(size.id);
+});
+void getPopupSize().then((s) => {
+  size = s;
+  applySize(s);
+});
+
+function applySize(s: PopupSize): void {
+  document.documentElement.style.setProperty('--popup-width', `${s.width}px`);
+  document.documentElement.style.setProperty('--popup-height', `${s.height}px`);
+  sizeButton.title = `Popup size: ${s.label} (click to change)`;
+}
 
 void init();
 
