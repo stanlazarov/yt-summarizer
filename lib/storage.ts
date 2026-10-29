@@ -3,6 +3,7 @@
 
 import { browser } from 'wxt/browser';
 import type { Summary } from './summarize';
+import type { SummaryUsage } from './usage';
 
 export const MODELS = [
   { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5 (fast, cheap)' },
@@ -87,7 +88,7 @@ export interface UserError {
 
 export type SummaryState =
   | { status: 'loading'; updatedAt: number }
-  | { status: 'done'; title: string; summary: Summary; prefs?: SummaryPrefs; updatedAt: number }
+  | { status: 'done'; title: string; summary: Summary; prefs?: SummaryPrefs; usage?: SummaryUsage; updatedAt: number }
   | { status: 'error'; error: UserError; updatedAt: number };
 
 const summaryKey = (videoId: string) => `summary:${videoId}`;

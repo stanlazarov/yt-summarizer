@@ -123,6 +123,8 @@ const Summary = z.object({
 | Haiku 5.5 | ~$0.002 |
 | Sonnet 5.5 | ~$0.05 |
 
+Each summary also shows its own numbers: `lib/usage.ts` turns the response's `usage` field (input incl. cache tokens, output incl. thinking) into a token count and an approximate cost from list prices, priced at the model that served the request (`response.model`, which differs from the chosen one after a Sonnet fallback). A model without a known price shows tokens only. The side panel shows one muted line under the summary, with exact counts on hover. Update `PRICES` when list prices change.
+
 ## Files
 
 ```
@@ -140,6 +142,7 @@ lib/
   messages.ts            # typed message contracts
   storage.ts             # typed chrome.storage wrappers
   time.ts                # mm:ss formatting/parsing
+  usage.ts               # token usage → approximate cost
 tests/
   transcript.test.ts
   fixtures/              # saved watch-page HTML + json3 caption files
