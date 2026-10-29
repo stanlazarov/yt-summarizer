@@ -43,7 +43,7 @@ side panel ──(getSummary videoId)──▶ background service worker ──�
 
 ```
 entrypoints/   background.ts, youtube.content.ts, sidepanel/, options/
-lib/           transcript.ts, summarize.ts, messages.ts, storage.ts, time.ts
+lib/           transcript.ts, summarize.ts, messages.ts, storage.ts, time.ts, usage.ts
 tests/         vitest tests + fixtures (saved watch-page HTML, transcript-panel HTML, json3 captions)
 scripts/       make-icons.mjs (generates public/icon/*.png)
 docs/          PLAN.md

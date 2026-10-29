@@ -5,6 +5,7 @@ import type { Transcript } from './messages';
 import { MessageError } from './messages';
 import type { ModelId, SummaryLength, SummaryPrefs, SummaryStyle, UserError } from './storage';
 import { formatTranscript, mergeSegments } from './transcript';
+import { summarizeUsage, type SummaryUsage } from './usage';
 
 export const Summary = z.object({
   tldr: z.string(),
@@ -67,7 +68,7 @@ export async function summarize(opts: {
   model: ModelId;
   transcript: Transcript;
   prefs: SummaryPrefs;
-}): Promise<Summary> {
+}): Promise<{ summary: Summary; usage: SummaryUsage }> {
   const { transcript } = opts;
   const text = formatTranscript(mergeSegments(transcript.segments));
   const withFallback = FALLBACK_MODELS.has(opts.model);
@@ -102,7 +103,11 @@ export async function summarize(opts: {
   if (response.stop_reason === 'max_tokens' || !response.parsed_output) {
     throw new MessageError({ message: 'Summary was incomplete, try again.' });
   }
-  return postProcess(response.parsed_output, transcript.durationSec);
+  return {
+    summary: postProcess(response.parsed_output, transcript.durationSec),
+    // After a fallback, `model` is the one that served the request.
+    usage: summarizeUsage(response.model, response.usage),
+  };
 }
 
 /** Drops sections outside the video and sorts them by start time. */

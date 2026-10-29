@@ -6,6 +6,7 @@ import { browser } from 'wxt/browser';
 import { sendToBackground, sendToTab, toUserError } from '@/lib/messages';
 import { getSummaryState, watchSummaryState, type SummaryState, type UserError } from '@/lib/storage';
 import type { Summary } from '@/lib/summarize';
+import { formatCost, formatTokens, type SummaryUsage } from '@/lib/usage';
 import { currentSectionIndex, formatTimestamp } from '@/lib/time';
 import { videoIdFromUrl } from '@/lib/transcript';
 import { icon } from './icons';
@@ -67,7 +68,7 @@ async function refresh(): Promise<void> {
         self.titled = true;
         setTitle(state.title);
       }
-      renderSummary(state.summary, videoId, tabId, () => start(true));
+      renderSummary(state.summary, state.usage, videoId, tabId, () => start(true));
     }
   };
 
@@ -129,7 +130,13 @@ function renderError(error: UserError, retry: () => void): void {
   );
 }
 
-function renderSummary(summary: Summary, videoId: string, tabId: number, resummarize: () => void): void {
+function renderSummary(
+  summary: Summary,
+  usage: SummaryUsage | undefined,
+  videoId: string,
+  tabId: number,
+  resummarize: () => void,
+): void {
   const rows: HTMLButtonElement[] = [];
   let currentRow = -1;
   const highlight = (index: number) => {
@@ -186,12 +193,24 @@ function renderSummary(summary: Summary, videoId: string, tabId: number, resumma
         )
       : '',
     el('div', { className: 'actions' }, button('Re-summarize', resummarize, 'secondary', icon('refresh'))),
+    usage ? renderUsage(usage) : '',
   );
 
   if (rows.length === 0) return;
   void track();
   const timer = setInterval(() => void track(), PLAYBACK_POLL_MS);
   stopTracking = () => clearInterval(timer);
+}
+
+/** One muted line under the summary: approximate cost and tokens, exact counts on hover. */
+function renderUsage(usage: SummaryUsage): HTMLElement {
+  const tokens = `${formatTokens(usage.inputTokens)} in · ${formatTokens(usage.outputTokens)} out`;
+  const text = usage.costUsd === null ? `${tokens} tokens` : `≈ ${formatCost(usage.costUsd)} · ${tokens} tokens`;
+  const n = (v: number) => v.toLocaleString();
+  return el('p', {
+    className: 'usage',
+    title: `${usage.model}: ${n(usage.inputTokens)} input, ${n(usage.outputTokens)} output tokens. Cost is estimated from list prices.`,
+  }, text);
 }
 
 function button(label: string, onClick: () => void, className = '', leading?: Node): HTMLButtonElement {

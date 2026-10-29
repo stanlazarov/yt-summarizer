@@ -502,3 +502,13 @@ button:focus-visible {
     transition: none !important;
   }
 }
+
+/* Token usage and cost under a summary */
+
+.usage {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  animation: rise 0.35s var(--ease) 160ms both;
+}

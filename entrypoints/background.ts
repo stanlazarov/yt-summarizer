@@ -33,8 +33,8 @@ export default defineBackground(() => {
       const { apiKey, model, ...prefs } = await getSettings();
       if (!apiKey) throw new MessageError({ message: 'Add your API key in Options.', action: 'options' });
       const transcript = await sendToTab(tabId, { type: 'getTranscript', videoId });
-      const summary = await summarize({ apiKey, model, transcript, prefs });
-      await setSummaryState(videoId, { status: 'done', title: transcript.title, summary, prefs, updatedAt: Date.now() });
+      const { summary, usage } = await summarize({ apiKey, model, transcript, prefs });
+      await setSummaryState(videoId, { status: 'done', title: transcript.title, summary, prefs, usage, updatedAt: Date.now() });
     } catch (err) {
       await setSummaryState(videoId, { status: 'error', error: toUserError(err), updatedAt: Date.now() });
     } finally {
