@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { describe, expect, it } from 'vitest';
-import { mapApiError, postProcess } from '../lib/summarize';
+import { DEFAULT_PREFS } from '../lib/storage';
+import { buildSystemPrompt, mapApiError, postProcess } from '../lib/summarize';
 import { formatTimestamp, parseTimestamp } from '../lib/time';
 
 describe('postProcess', () => {
@@ -24,6 +25,33 @@ describe('postProcess', () => {
 
   it('keeps everything non-negative when the duration is unknown', () => {
     expect(postProcess(summary, 0).sections.map((s) => s.title)).toEqual(['a', 'b', 'past the end']);
+  });
+});
+
+describe('buildSystemPrompt', () => {
+  it('defaults to the transcript language', () => {
+    expect(buildSystemPrompt(DEFAULT_PREFS)).toContain('same language as the transcript');
+  });
+
+  it('uses the chosen language', () => {
+    const prompt = buildSystemPrompt({ ...DEFAULT_PREFS, language: 'German' });
+    expect(prompt).toContain('in German');
+    expect(prompt).not.toContain('same language as the transcript');
+  });
+
+  it('differs by length and style', () => {
+    const prompts = new Set(
+      (['brief', 'standard', 'detailed'] as const).flatMap((length) =>
+        (['notes', 'bullets', 'eli5'] as const).map((style) => buildSystemPrompt({ ...DEFAULT_PREFS, length, style })),
+      ),
+    );
+    expect(prompts.size).toBe(9);
+  });
+
+  it('always keeps the timestamp rule', () => {
+    expect(buildSystemPrompt({ language: 'auto', length: 'detailed', style: 'eli5' })).toContain(
+      'start_seconds must be taken from a timestamp',
+    );
   });
 });
 

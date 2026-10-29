@@ -12,17 +12,67 @@ export const MODELS = [
 export type ModelId = (typeof MODELS)[number]['id'];
 export const DEFAULT_MODEL: ModelId = 'claude-haiku-5-5';
 
-export interface Settings {
+/** `auto` writes in the transcript's language; anything else is an English language name sent to the prompt. */
+export const LANGUAGES = [
+  { id: 'auto', label: 'Same as the video' },
+  ...[
+    'English', 'Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Dutch', 'Polish', 'Ukrainian', 'Russian',
+    'Bulgarian', 'Turkish', 'Arabic', 'Hindi', 'Indonesian', 'Vietnamese', 'Japanese', 'Korean', 'Chinese (Simplified)',
+    'Chinese (Traditional)',
+  ].map((name) => ({ id: name, label: name })),
+] as const;
+
+export const LENGTHS = [
+  { id: 'brief', label: 'Brief' },
+  { id: 'standard', label: 'Standard' },
+  { id: 'detailed', label: 'Detailed' },
+] as const;
+
+export const STYLES = [
+  { id: 'notes', label: 'Notes' },
+  { id: 'bullets', label: 'Bullets' },
+  { id: 'eli5', label: 'ELI5 (explain simply)' },
+] as const;
+
+export type SummaryLength = (typeof LENGTHS)[number]['id'];
+export type SummaryStyle = (typeof STYLES)[number]['id'];
+
+/** Everything that changes the summary's content. A cached summary made with different prefs is stale. */
+export interface SummaryPrefs {
+  language: string;
+  length: SummaryLength;
+  style: SummaryStyle;
+}
+
+export const DEFAULT_PREFS: SummaryPrefs = { language: 'auto', length: 'standard', style: 'notes' };
+
+export interface Settings extends SummaryPrefs {
   apiKey: string;
   model: ModelId;
 }
 
+const pick = <T extends string>(options: readonly { id: T }[], value: unknown, fallback: T): T =>
+  options.find((o) => o.id === value)?.id ?? fallback;
+
 export async function getSettings(): Promise<Settings> {
-  const { apiKey, model } = await browser.storage.local.get(['apiKey', 'model']);
+  const { apiKey, model, language, length, style } = await browser.storage.local.get([
+    'apiKey',
+    'model',
+    'language',
+    'length',
+    'style',
+  ]);
   return {
     apiKey: typeof apiKey === 'string' ? apiKey : '',
-    model: MODELS.some((m) => m.id === model) ? (model as ModelId) : DEFAULT_MODEL,
+    model: pick(MODELS, model, DEFAULT_MODEL),
+    language: pick(LANGUAGES, language, DEFAULT_PREFS.language),
+    length: pick(LENGTHS, length, DEFAULT_PREFS.length),
+    style: pick(STYLES, style, DEFAULT_PREFS.style),
   };
+}
+
+export function samePrefs(a: SummaryPrefs, b: SummaryPrefs): boolean {
+  return a.language === b.language && a.length === b.length && a.style === b.style;
 }
 
 export async function setSettings(settings: Partial<Settings>): Promise<void> {
@@ -57,7 +107,7 @@ export interface UserError {
 
 export type SummaryState =
   | { status: 'loading'; updatedAt: number }
-  | { status: 'done'; title: string; summary: Summary; updatedAt: number }
+  | { status: 'done'; title: string; summary: Summary; prefs?: SummaryPrefs; updatedAt: number }
   | { status: 'error'; error: UserError; updatedAt: number };
 
 const summaryKey = (videoId: string) => `summary:${videoId}`;

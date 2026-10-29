@@ -6,6 +6,8 @@ A Chrome extension that summarizes the YouTube video you're watching using Claud
 - **Key points**: the main takeaways
 - **Timestamped sections**: a chapter-style breakdown. Click a timestamp to jump to that part of the video.
 
+In Options you can choose the summary's language, its length (brief, standard, or detailed), and its style (notes, bullets, or ELI5).
+
 You use your own Anthropic API key, and there's no server in between.
 
 > **Status: early development.** The extension builds and the unit tests pass, but it hasn't been tested end to end against the Claude API yet. See [`docs/PLAN.md`](docs/PLAN.md) for the build checklist.

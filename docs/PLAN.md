@@ -95,7 +95,9 @@ const Summary = z.object({
 
 - Summarize only what the transcript says, without adding outside facts.
 - Section start times must be taken from the transcript's timestamps.
-- Write in the transcript's language.
+- Write in the transcript's language, or in the language chosen in Options.
+- Length (brief / standard / detailed; standard is the default) sets how long the TL;DR is and how many key points and sections there are. Style (notes / bullets / ELI5) sets the tone. The output schema is the same for all of them, so the popup doesn't change. `buildSystemPrompt(prefs)` in `lib/summarize.ts` is pure and unit-tested.
+- A cached summary stores the prefs it was made with. If the prefs no longer match, the background makes a new one.
 
 ### Post-processing
 
@@ -178,5 +180,4 @@ tests/
 - **YouTube caption access changes.** YouTube has started requiring proof-of-origin tokens on some caption requests. If the primary path fails, the DOM fallback depends on the transcript panel's markup, which can also change. Mitigation: two independent strategies, fixture-based tests, and clear errors.
 - **Very long videos (3h+).** These still fit in the context window, but the cost on Sonnet and the response time grow. Possible later work: a progress indicator, a length warning before summarizing, or summarizing in chunks.
 - **API key storage.** `chrome.storage.local` isn't encrypted. That's acceptable for a personal BYOK tool. A public release would need a backend.
-- **Language.** The current plan is to summarize in the transcript's language. A "summary language" setting may be wanted later.
 - **Persistent cache.** Session storage is cleared when the browser restarts. If re-summarizing turns out to be annoying, move finished summaries to `chrome.storage.local` with an LRU cap.

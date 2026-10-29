@@ -53,6 +53,20 @@
         display: flex;
         gap: 8px;
       }
+      .section-title {
+        margin: 26px 0 0;
+        padding-top: 18px;
+        border-top: 1px solid var(--border);
+        font-size: 14px;
+      }
+      .section-title + .field {
+        margin-top: 14px;
+      }
+      .split {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
       input,
       select {
         flex: 1;
@@ -164,6 +178,25 @@
           <select id="model"></select>
           <p class="hint">Haiku costs about $0.002 per hour of video. Sonnet costs about $0.05 and handles dense or technical videos better.</p>
         </div>
+
+        <h2 class="section-title">Summary</h2>
+
+        <div class="field">
+          <label for="language">Language</label>
+          <select id="language"></select>
+        </div>
+
+        <div class="field split">
+          <div>
+            <label for="length">Length</label>
+            <select id="length"></select>
+          </div>
+          <div>
+            <label for="style">Style</label>
+            <select id="style"></select>
+          </div>
+        </div>
+        <p class="hint">Changes apply to the next summary you open. Summaries already made with other settings are redone.</p>
 
         <div class="actions">
           <button type="submit">Save</button>

@@ -3,7 +3,7 @@ import { betaZodOutputFormat } from '@anthropic-ai/sdk/helpers/beta/zod';
 import { z } from 'zod';
 import type { Transcript } from './messages';
 import { MessageError } from './messages';
-import type { ModelId, UserError } from './storage';
+import type { ModelId, SummaryLength, SummaryPrefs, SummaryStyle, UserError } from './storage';
 import { formatTranscript, mergeSegments } from './transcript';
 
 export const Summary = z.object({
@@ -19,14 +19,40 @@ export const Summary = z.object({
 });
 export type Summary = z.infer<typeof Summary>;
 
-const SYSTEM_PROMPT = `You summarize YouTube videos from their transcripts. Each transcript line starts with a [m:ss] or [h:mm:ss] timestamp.
+const LENGTH_RULES: Record<SummaryLength, string> = {
+  brief: `- tldr: one or two sentences covering what the video is about and its main conclusion.
+- key_points: 3 to 5 of the most important takeaways.
+- sections: one per major topic only; a 10-minute video usually has 2 to 4, an hour-long one 5 to 8. Each section summary is one sentence.`,
+  standard: `- tldr: two to four sentences covering what the video is about and its main conclusion.
+- key_points: 3 to 8 short bullets with the most important takeaways.
+- sections: one per distinct topic; a 10-minute video usually has 3 to 6, an hour-long one 8 to 15. Each section summary is one or two sentences.`,
+  detailed: `- tldr: a short paragraph (three to five sentences) covering what the video is about, how it gets there, and its main conclusion.
+- key_points: 6 to 12 takeaways, including supporting details, numbers, examples, and caveats the video gives.
+- sections: one per distinct topic; a 10-minute video usually has 4 to 7, an hour-long one 10 to 18. Each section summary is two to four sentences.`,
+};
+
+const STYLE_RULES: Record<SummaryStyle, string> = {
+  notes: `Write like concise study notes: full but compact sentences, specific rather than generic, keeping the video's terminology.`,
+  bullets: `Write as terse as possible: key points and section summaries are short fragments (no full sentences needed, no filler words), and each key point is one idea of at most about 12 words. The tldr may be full sentences.`,
+  eli5: `Explain like you're talking to a curious 10-year-old: plain everyday words, short sentences, and a quick analogy where it helps. Explain any jargon you can't avoid. Stay accurate; simplify, don't distort.`,
+};
+
+/** Builds the system prompt for the user's summary prefs. Pure, so it can be tested. */
+export function buildSystemPrompt(prefs: SummaryPrefs): string {
+  const language =
+    prefs.language === 'auto'
+      ? 'Write the summary in the same language as the transcript.'
+      : `Write the whole summary (tldr, key points, section titles and summaries) in ${prefs.language}, whatever language the transcript is in. Keep names and established technical terms in their usual form.`;
+  return `You summarize YouTube videos from their transcripts. Each transcript line starts with a [m:ss] or [h:mm:ss] timestamp.
 
 Produce:
-- tldr: two to four sentences covering what the video is about and its main conclusion.
-- key_points: 3 to 8 short bullets with the most important takeaways, specific rather than generic.
-- sections: a chapter-style breakdown in chronological order. Each section's start_seconds must be taken from a timestamp that appears in the transcript, converted to seconds. Give each a short title and a one or two sentence summary. Aim for one section per distinct topic; a 10-minute video usually has 3 to 6, an hour-long one 8 to 15.
+${LENGTH_RULES[prefs.length]}
+- Sections are a chapter-style breakdown in chronological order. Each section's start_seconds must be taken from a timestamp that appears in the transcript, converted to seconds. Give each a short title.
 
-Summarize only what the transcript says. Don't add outside facts or opinions. Transcripts are often auto-generated, so silently correct obvious transcription errors in names and terms. Write the summary in the same language as the transcript.`;
+Style: ${STYLE_RULES[prefs.style]}
+
+Summarize only what the transcript says. Don't add outside facts or opinions. Transcripts are often auto-generated, so silently correct obvious transcription errors in names and terms. ${language}`;
+}
 
 /** Server-side fallbacks exist only for Sonnet; Haiku has none. */
 const FALLBACK_MODELS: ReadonlySet<ModelId> = new Set(['claude-sonnet-5-5']);
@@ -40,6 +66,7 @@ export async function summarize(opts: {
   apiKey: string;
   model: ModelId;
   transcript: Transcript;
+  prefs: SummaryPrefs;
 }): Promise<Summary> {
   const { transcript } = opts;
   const text = formatTranscript(mergeSegments(transcript.segments));
@@ -50,7 +77,7 @@ export async function summarize(opts: {
     response = await client(opts.apiKey).beta.messages.parse({
       model: opts.model,
       max_tokens: 16000,
-      system: SYSTEM_PROMPT,
+      system: buildSystemPrompt(opts.prefs),
       messages: [
         {
           role: 'user',

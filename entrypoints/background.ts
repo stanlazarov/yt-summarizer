@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import { MessageError, onMessages, sendToTab, toUserError } from '@/lib/messages';
-import { getSettings, getSummaryState, setSummaryState } from '@/lib/storage';
+import { getSettings, getSummaryState, samePrefs, setSummaryState } from '@/lib/storage';
 import { summarize, testApiKey } from '@/lib/summarize';
 
 export default defineBackground(() => {
@@ -15,7 +15,8 @@ export default defineBackground(() => {
       const state = await getSummaryState(videoId);
       // Errors are retried on the next popup open, so fixing the cause (adding
       // a key, reloading the tab) is enough.
-      if (!force && state?.status === 'done') return;
+      // A summary made with other prefs (or before prefs existed) is stale.
+      if (!force && state?.status === 'done' && state.prefs && samePrefs(state.prefs, await getSettings())) return;
       void run(videoId, tabId);
     },
     testKey: ({ apiKey, model }) => testApiKey(apiKey, model),
@@ -26,11 +27,11 @@ export default defineBackground(() => {
     await setSummaryState(videoId, { status: 'loading', updatedAt: Date.now() });
     await setBadge(tabId, '…');
     try {
-      const { apiKey, model } = await getSettings();
+      const { apiKey, model, ...prefs } = await getSettings();
       if (!apiKey) throw new MessageError({ message: 'Add your API key in Options.', action: 'options' });
       const transcript = await sendToTab(tabId, { type: 'getTranscript', videoId });
-      const summary = await summarize({ apiKey, model, transcript });
-      await setSummaryState(videoId, { status: 'done', title: transcript.title, summary, updatedAt: Date.now() });
+      const summary = await summarize({ apiKey, model, transcript, prefs });
+      await setSummaryState(videoId, { status: 'done', title: transcript.title, summary, prefs, updatedAt: Date.now() });
     } catch (err) {
       await setSummaryState(videoId, { status: 'error', error: toUserError(err), updatedAt: Date.now() });
     } finally {
