@@ -69,20 +69,89 @@ async function fromCaptionTrack(info: VideoInfo): Promise<Segment[]> {
  * Fallback: open "Show transcript" under the description and scrape the panel.
  * In practice this is the main path: on 2026-10-29 caption-track requests came
  * back empty without a proof-of-origin token.
+ *
+ * The panel is opened invisibly and closed again afterwards, so the user never
+ * sees it. A panel the user opened themselves is read and left alone.
  */
 async function fromTranscriptPanel(videoId: string): Promise<Segment[]> {
   if (videoIdFromUrl(location.href) !== videoId) return [];
-  if (!document.querySelector(PANEL_SEGMENT_SELECTOR)) {
-    // The section can render twice (one copy hidden, depending on layout).
-    const buttons = [
-      ...document.querySelectorAll<HTMLElement>('ytd-video-description-transcript-section-renderer button'),
-    ];
-    const button = buttons.find((b) => b.offsetParent !== null) ?? buttons[0];
-    if (!button) return [];
+  const userOpened = [...document.querySelectorAll(TRANSCRIPT_PANEL)].some(
+    (p) => p.getAttribute('visibility') === EXPANDED && p.querySelector(PANEL_SEGMENT_SELECTOR),
+  );
+  if (userOpened) return parsePanelRows(readPanelRows(document));
+
+  // The section can render twice (one copy hidden, depending on layout).
+  const buttons = [
+    ...document.querySelectorAll<HTMLElement>('ytd-video-description-transcript-section-renderer button'),
+  ];
+  const button = buttons.find((b) => b.offsetParent !== null) ?? buttons[0];
+  if (!button) return [];
+
+  const hide = hideTranscriptPanel();
+  try {
     button.click();
     if (!(await waitFor(PANEL_SEGMENT_SELECTOR, 10000))) return [];
+    await waitForStableCount(PANEL_SEGMENT_SELECTOR);
+    return parsePanelRows(readPanelRows(document));
+  } finally {
+    await closeTranscriptPanel();
+    hide.remove();
   }
-  return parsePanelRows(readPanelRows(document));
+}
+
+const TRANSCRIPT_PANEL =
+  'ytd-engagement-panel-section-list-renderer[target-id="engagement-panel-searchable-transcript"], ' +
+  'ytd-engagement-panel-section-list-renderer[target-id="PAmodern_transcript_view"]';
+const EXPANDED = 'ENGAGEMENT_PANEL_VISIBILITY_EXPANDED';
+const HIDDEN = 'ENGAGEMENT_PANEL_VISIBILITY_HIDDEN';
+
+/**
+ * Makes the transcript panel invisible without moving it off-screen: YouTube
+ * only loads the transcript while the panel is in the viewport.
+ */
+function hideTranscriptPanel(): HTMLStyleElement {
+  const style = document.createElement('style');
+  style.textContent = `${TRANSCRIPT_PANEL} {
+    position: fixed !important; top: 0 !important; left: 0 !important;
+    opacity: 0 !important; pointer-events: none !important; z-index: -1 !important;
+  }`;
+  document.head.append(style);
+  return style;
+}
+
+async function closeTranscriptPanel(): Promise<void> {
+  for (const panel of document.querySelectorAll<HTMLElement>(TRANSCRIPT_PANEL)) {
+    if (panel.getAttribute('visibility') !== EXPANDED) continue;
+    const close = panel.querySelector<HTMLElement>(
+      'ytd-engagement-panel-title-header-renderer #visibility-button button, button[aria-label="Close"]',
+    );
+    if (close) close.click();
+    else panel.setAttribute('visibility', HIDDEN);
+  }
+  // Keep the panel hidden until YouTube has finished closing it.
+  const start = Date.now();
+  while (Date.now() - start < 1000 && document.querySelector(`:is(${TRANSCRIPT_PANEL})[visibility="${EXPANDED}"]`)) {
+    await sleep(50);
+  }
+}
+
+/** Waits until the number of matches stops changing, since long transcripts render in batches. */
+async function waitForStableCount(selector: string, quietMs = 400, timeoutMs = 5000): Promise<void> {
+  const start = Date.now();
+  let count = document.querySelectorAll(selector).length;
+  let changedAt = Date.now();
+  while (Date.now() - changedAt < quietMs && Date.now() - start < timeoutMs) {
+    await sleep(100);
+    const next = document.querySelectorAll(selector).length;
+    if (next !== count) {
+      count = next;
+      changedAt = Date.now();
+    }
+  }
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function waitFor(selector: string, timeoutMs: number): Promise<boolean> {

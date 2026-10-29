@@ -157,10 +157,22 @@ const PANEL_MARKUPS = [
 /** Selector that matches a transcript segment in any known markup. */
 export const PANEL_SEGMENT_SELECTOR = PANEL_MARKUPS.map((m) => m.segment).join(', ');
 
-/** Reads `{timestamp, text}` rows from a rendered transcript panel. */
+const PANEL_CONTAINER = 'ytd-engagement-panel-section-list-renderer';
+
+/**
+ * Reads `{timestamp, text}` rows from a rendered transcript panel. YouTube can
+ * render the panel twice (one copy hidden), both filled, so rows come from a
+ * single panel: the expanded one if any, else the first.
+ */
 export function readPanelRows(root: ParentNode): Array<{ timestamp: string; text: string }> {
   for (const markup of PANEL_MARKUPS) {
-    const rows = [...root.querySelectorAll(markup.segment)].map((el) => ({
+    const all = [...root.querySelectorAll(markup.segment)];
+    if (all.length === 0) continue;
+    const panels = [...new Set(all.map((el) => el.closest(PANEL_CONTAINER)))];
+    const panel =
+      panels.find((p) => p?.getAttribute('visibility') === 'ENGAGEMENT_PANEL_VISIBILITY_EXPANDED') ?? panels[0];
+    const segments = all.filter((el) => el.closest(PANEL_CONTAINER) === panel);
+    const rows = segments.map((el) => ({
       timestamp: el.querySelector(markup.timestamp)?.textContent ?? '',
       text: el.querySelector(markup.text)?.textContent ?? '',
     }));

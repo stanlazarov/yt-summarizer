@@ -155,6 +155,19 @@ describe('transcript panel', () => {
     ]);
   });
 
+  it('reads only one copy when YouTube renders the panel twice', () => {
+    const segments = parsePanelRows(readPanelRows(panel('panel-duplicated.html')));
+    expect(segments.map((s) => s.startSec)).toEqual([0, 16]);
+  });
+
+  it('prefers the expanded panel copy', () => {
+    const root = panel('panel-duplicated.html');
+    const [hidden, expanded] = root.querySelectorAll('ytd-engagement-panel-section-list-renderer');
+    expanded!.querySelector('.segment-text')!.textContent = 'from the expanded copy';
+    hidden!.querySelector('.segment-text')!.textContent = 'from the hidden copy';
+    expect(readPanelRows(root)[0]!.text).toBe('from the expanded copy');
+  });
+
   it('returns [] when no panel is rendered', () => {
     expect(readPanelRows(document.createElement('div'))).toEqual([]);
   });

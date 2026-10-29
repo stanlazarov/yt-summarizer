@@ -11,3 +11,4 @@ new fixture from a real page *before* changing the parser.
 | `json3-auto-captions.json` | Hand-written in YouTube's json3 shape (window events with no `segs`, `aAppend` newline events, multi-seg events). Real timedtext requests returned empty bodies without a proof-of-origin token on 2026-10-29, so no real capture exists yet. |
 | `panel-legacy.html` | Transcript panel `ytd-transcript-segment-list-renderer` from `xAcTmDO6NTI` (2026-10-29), first 5 segments, Polymer comments/templates stripped. |
 | `panel-view-model.html` | Newer transcript panel (`transcript-segment-view-model`, grouped by chapter) from `jNQXAC9IVRw` (2026-10-29), inline styles stripped. |
+| `panel-duplicated.html` | Derived from `panel-legacy.html` (first 2 segments). On 2026-10-29 `xAcTmDO6NTI` rendered two `engagement-panel-searchable-transcript` panels (one `EXPANDED`, one `HIDDEN`), both filled with all 573 segments, which doubled the transcript. |
