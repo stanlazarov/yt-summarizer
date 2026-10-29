@@ -14,3 +14,13 @@ export function parseTimestamp(text: string): number | null {
   if (!/^\d{1,3}(:\d{1,2}){1,2}$/.test(trimmed)) return null;
   return trimmed.split(':').reduce((acc, part) => acc * 60 + Number(part), 0);
 }
+
+/** Index of the section playing at `seconds` (the last one starting at or before it), or -1 before the first. Expects sections sorted by start. */
+export function currentSectionIndex(sections: readonly { start_seconds: number }[], seconds: number): number {
+  let index = -1;
+  for (const [i, s] of sections.entries()) {
+    if (s.start_seconds > seconds) break;
+    index = i;
+  }
+  return index;
+}

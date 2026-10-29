@@ -24,6 +24,13 @@ export default defineContentScript({
         video.currentTime = seconds;
         void video.play();
       },
+      getPlayback: async ({ videoId }) => {
+        if (videoIdFromUrl(location.href) !== videoId) return null;
+        // During an ad, <video> plays the ad and its currentTime is the ad's.
+        if (document.querySelector('#movie_player.ad-showing')) return null;
+        const video = document.querySelector<HTMLVideoElement>('#movie_player video') ?? document.querySelector('video');
+        return video ? { seconds: video.currentTime } : null;
+      },
     });
   },
 });

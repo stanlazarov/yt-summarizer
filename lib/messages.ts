@@ -1,4 +1,4 @@
-// Typed message contracts between popup, options, background, and content
+// Typed message contracts between side panel, options, background, and content
 // script. Add a type here before sending any new message.
 
 import { browser } from 'wxt/browser';
@@ -14,14 +14,19 @@ export interface Transcript {
 
 /** Message name → request payload and response type. */
 export interface MessageMap {
-  /** popup → background: start a summary unless one exists (or `force`). */
+  /** side panel → background: start a summary unless one exists (or `force`). */
   getSummary: { req: { videoId: string; tabId: number; force?: boolean }; res: void };
   /** options → background: check that an API key works. */
   testKey: { req: { apiKey: string; model: ModelId }; res: void };
   /** background → content script: fetch the transcript for a video. */
   getTranscript: { req: { videoId: string }; res: Transcript };
-  /** popup → content script: seek the page's video. */
+  /** side panel → content script: seek the page's video. */
   seek: { req: { seconds: number }; res: void };
+  /**
+   * side panel → content script: current playback position of `videoId`.
+   * `null` if the page shows another video, has no player, or is playing an ad.
+   */
+  getPlayback: { req: { videoId: string }; res: { seconds: number } | null };
 }
 
 export type MessageType = keyof MessageMap;
