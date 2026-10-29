@@ -8,7 +8,7 @@ A Chrome extension that summarizes the YouTube video you're watching using Claud
 
 You use your own Anthropic API key, and there's no server in between.
 
-> **Status: planning.** The code doesn't exist yet, so the steps below describe how the extension *will* run once it's built. See [`docs/PLAN.md`](docs/PLAN.md) for the design and build checklist.
+> **Status: early development.** The extension builds and the unit tests pass, but it hasn't been tested end to end against the Claude API yet. See [`docs/PLAN.md`](docs/PLAN.md) for the build checklist.
 
 ## Requirements
 
@@ -73,14 +73,17 @@ Each summary is one API call billed to your Anthropic account. A 1-hour video co
 | "Invalid API key, check Options" | Re-paste the key in Options and make sure it's active in the Anthropic Console. |
 | "Rate limited" | Wait a moment and try again, or check your account's rate limits. |
 | "Couldn't summarize this video" | Switch to Sonnet 5.5 in Options and try again. |
+| "Reload the YouTube tab and try again" | The tab was open before the extension was installed or updated. Reload it. |
 | Summary is for the wrong video | Click **Re-summarize**. If it keeps happening, reload the YouTube tab. |
 | Nothing happens on click | Make sure the tab is a `youtube.com/watch` page. Then check `chrome://extensions` → the extension → **Errors**. |
 
 ## Development
 
 ```bash
-npx vitest       # run unit tests
-npm run build    # production build
+npx vitest                    # run unit tests
+npm run compile               # type-check
+npm run build                 # production build
+node scripts/make-icons.mjs   # regenerate the toolbar icons
 ```
 
 Project conventions are in [`CLAUDE.md`](CLAUDE.md).

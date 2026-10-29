@@ -145,12 +145,12 @@ tests/
 
 ## Build checklist
 
-- [ ] **1. Scaffold.** WXT + TypeScript project and a manifest with the permissions above. The extension loads in Chrome via `npm run dev`.
-- [ ] **2. Transcript spike.** Content script + `lib/transcript.ts`. Log the transcript for several real videos (manual captions, auto captions, none). Save fixtures and write the Vitest tests.
-- [ ] **3. Options page.** API key input (masked), model select, and a "Test key" button.
-- [ ] **4. Summarization.** `lib/summarize.ts` + background orchestration + session storage.
-- [ ] **5. Popup UI.** Loading, done, and error states; clickable timestamps; a "Re-summarize" button.
-- [ ] **6. Polish.** A message when the tab isn't a video page, a badge while a summary is in progress, and the README updated with screenshots.
+- [x] **1. Scaffold.** WXT + TypeScript project and a manifest with the permissions above. The extension loads in Chrome via `npm run dev`.
+- [x] **2. Transcript spike.** Content script + `lib/transcript.ts`. Log the transcript for several real videos (manual captions, auto captions, none). Save fixtures and write the Vitest tests.
+- [x] **3. Options page.** API key input (masked), model select, and a "Test key" button.
+- [x] **4. Summarization.** `lib/summarize.ts` + background orchestration + session storage.
+- [x] **5. Popup UI.** Loading, done, and error states; clickable timestamps; a "Re-summarize" button.
+- [ ] **6. Polish.** A message when the tab isn't a video page, a badge while a summary is in progress, and the README updated with screenshots. *(Not-a-video message and badge are done; screenshots are still needed.)*
 
 ## Verification
 
@@ -165,6 +165,13 @@ tests/
   - Clicking a timestamp → the video seeks to it
   - An invalid key → the "check Options" hint
 - `npm run build` → "Load unpacked" from `.output/chrome-mv3` works in a fresh Chrome profile.
+
+## Findings from the transcript spike (2026-10-29)
+
+- **The primary path is currently dead.** The watch page still lists `captionTracks`, but `timedtext` requests return `200` with an empty body (the URLs carry `exp=xpe`, and no `pot` token is provided). This happens from inside youtube.com with cookies too. The innertube `get_transcript` endpoint returns `400 FAILED_PRECONDITION`. The code keeps the primary path, which costs one request and recovers automatically if YouTube relaxes this.
+- **The DOM panel works, in two markups.** Some videos render `ytd-transcript-segment-renderer` and others render `transcript-segment-view-model`, which is grouped under chapter headers. Both are handled and covered by fixtures. On a 1h03m video, the legacy panel rendered all 573 segments at once, with no virtualization.
+- The page renders the "Show transcript" button twice, and one copy can be hidden depending on layout.
+- `<video>.duration` reports the ad's length while an ad plays, so the duration comes only from the watch page's `videoDetails.lengthSeconds`.
 
 ## Open questions / risks
 

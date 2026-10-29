@@ -6,14 +6,14 @@ Guidance for Claude Code when working in this repository.
 
 A Chrome (Manifest V3) extension that summarizes the YouTube video in the current tab. The user brings their own Anthropic API key. The extension calls the Claude API directly, with no backend. The summary shows in the toolbar popup as a TL;DR, key points, and timestamped sections; clicking a timestamp seeks the video.
 
-**Status:** planning. The design and build checklist are in [`docs/PLAN.md`](docs/PLAN.md), and the code hasn't been scaffolded yet.
+**Status:** early development. Checklist steps 1–5 are implemented and unit-tested, but not yet verified end to end in Chrome. See [`docs/PLAN.md`](docs/PLAN.md).
 
 ## Stack
 
 - [WXT](https://wxt.dev) (Vite-based extension framework) + TypeScript (strict)
 - `@anthropic-ai/sdk` + `zod` for the Claude call and structured output
 - Vanilla TS + CSS for the popup and options UI (no framework)
-- Vitest for unit tests
+- Vitest for unit tests (happy-dom for the transcript-panel parser)
 
 ## Commands
 
@@ -22,6 +22,7 @@ npm install        # install dependencies
 npm run dev        # launch Chrome with the extension loaded + hot reload
 npm run build      # production build → .output/chrome-mv3
 npx vitest         # run unit tests
+npm run compile    # type-check
 ```
 
 ## Architecture
@@ -43,7 +44,8 @@ popup ──(getSummary videoId)──▶ background service worker ──▶ Cl
 ```
 entrypoints/   background.ts, youtube.content.ts, popup/, options/
 lib/           transcript.ts, summarize.ts, messages.ts, storage.ts, time.ts
-tests/         vitest tests + fixtures (saved watch-page HTML, json3 captions)
+tests/         vitest tests + fixtures (saved watch-page HTML, transcript-panel HTML, json3 captions)
+scripts/       make-icons.mjs (generates public/icon/*.png)
 docs/          PLAN.md
 ```
 
@@ -63,7 +65,8 @@ docs/          PLAN.md
   - Send server-side fallbacks (`fallbacks: "default"`) only for Sonnet; Haiku has none.
 - **Transcript extraction is fragile.** It depends on YouTube's internal page structure, which changes without notice.
   - Keep parsing logic in pure functions in `lib/transcript.ts`, separate from DOM and fetch code.
-  - Test those functions against saved fixtures.
+  - Test those functions against saved fixtures. `tests/fixtures/README.md` records where each one came from.
+  - In practice the transcript panel is the main path. As of 2026-10-29, caption-track (timedtext) requests return empty bodies without a proof-of-origin token, and YouTube serves two different panel markups (see `PANEL_MARKUPS`).
   - When YouTube breaks something, add a new fixture before fixing it.
 - **Errors shown to users** must be actionable ("Invalid API key, check Options"), not raw API errors.
 - Keep the UI small and dependency-free.

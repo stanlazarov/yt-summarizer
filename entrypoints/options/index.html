@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>YouTube Summarizer Options</title>
+    <meta name="manifest.open_in_tab" content="true" />
+    <link rel="stylesheet" href="../popup/style.css" />
+    <style>
+      body {
+        width: auto;
+        max-width: 520px;
+        max-height: none;
+        margin: 32px auto;
+        padding: 0 16px;
+      }
+      label {
+        display: block;
+        margin: 18px 0 6px;
+        font-weight: 600;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+      }
+      input,
+      select {
+        flex: 1;
+        width: 100%;
+        font: inherit;
+        padding: 7px 9px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      .hint {
+        margin-top: 6px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      #status {
+        margin-top: 14px;
+        min-height: 1.4em;
+      }
+      #status.ok {
+        color: #2e7d32;
+      }
+      #status.error {
+        color: var(--error);
+      }
+    </style>
+  </head>
+  <body>
+    <h1>YouTube Summarizer</h1>
+    <form id="form">
+      <label for="apiKey">Anthropic API key</label>
+      <div class="row">
+        <input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" />
+        <button id="toggle" type="button" class="secondary">Show</button>
+      </div>
+      <p class="hint">
+        Stored only in this browser (<code>chrome.storage.local</code>) and sent only to api.anthropic.com. Get one at
+        <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noreferrer">console.anthropic.com</a>.
+      </p>
+
+      <label for="model">Model</label>
+      <select id="model"></select>
+      <p class="hint">Haiku costs about $0.002 per hour of video. Sonnet costs about $0.05 and handles dense or technical videos better.</p>
+
+      <div class="actions">
+        <button type="submit">Save</button>
+        <button id="test" type="button" class="secondary">Test key</button>
+      </div>
+      <p id="status" role="status"></p>
+    </form>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
